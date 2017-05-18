@@ -111,8 +111,8 @@ def _cosine_drift(period_cut, frame_times):
     return cosine_drift
 
 
-def _blank_drift(frame_times):
-    """ Create the blank drift matrix
+def _none_drift(frame_times):
+    """ Create an intercept vector
 
     Returns
     -------
@@ -126,7 +126,7 @@ def _make_drift(drift_model, frame_times, order=1, period_cut=128.):
 
     Parameters
     ----------
-    drift_model : {'polynomial', 'cosine', 'blank'},
+    drift_model : {'polynomial', 'cosine', None},
         string that specifies the desired drift model
 
     frame_times : array of shape(n_scans),
@@ -146,13 +146,15 @@ def _make_drift(drift_model, frame_times, order=1, period_cut=128.):
     names : list of length(n_drifts),
         the associated names
     """
-    drift_model = drift_model.lower()   # for robust comparisons
+    from .utils import _basestring
+    if isinstance(drift_model, _basestring):
+        drift_model = drift_model.lower()  # for robust comparisons
     if drift_model == 'polynomial':
         drift = _poly_drift(order, frame_times)
     elif drift_model == 'cosine':
         drift = _cosine_drift(period_cut, frame_times)
-    elif drift_model == 'blank':
-        drift = _blank_drift(frame_times)
+    elif drift_model is None:
+        drift = _none_drift(frame_times)
     else:
         raise NotImplementedError("Unknown drift model %r" % (drift_model))
     names = []
@@ -291,7 +293,7 @@ def make_design_matrix(
 
     drift_model : string, optional
         Specifies the desired drift model,
-        It can be 'polynomial', 'cosine' or 'blank'.
+        It can be 'polynomial', 'cosine' or None.
 
     period_cut : float, optional
         Cut period of the low-pass filter in seconds.
@@ -360,7 +362,7 @@ def make_design_matrix(
         names += add_reg_names
 
     # step 3: drifts
-    drift, dnames = _make_drift(drift_model.lower(), frame_times, drift_order,
+    drift, dnames = _make_drift(drift_model, frame_times, drift_order,
                                 period_cut)
 
     if matrix is not None:
@@ -450,49 +452,56 @@ def plot_design_matrix(design_matrix, rescale=True, ax=None):
     return ax
 
 
-def create_second_level_design(maps_table, confounds=None):
-    """Sets up a second level design from a maps table.
+def create_second_level_design(subjects_label, confounds=None):
+    """Sets up a second level design.
+
+    Construct a design matrix with an intercept and subject specific confounds.
 
     Parameters
     ----------
-    maps_table: pandas DataFrame
-        Contains at least columns 'map_name' and 'subject_label'
+    subjects_label: list of str
+        Contain subject labels to extract confounders in the right order,
+        corresponding with the images, to create the design matrix.
     confounds: pandas DataFrame, optional
-        If given, contains at least two columns, 'subject_label' and one confound.
-        confounds and maps_table do not need to agree on their shape,
-        information between them is matched based on the 'subject_label' column
-        that both must have.
+        If given, contains at least two columns, 'subject_label' and one
+        confound. The subjects list determines the rows to extract from
+        confounds thanks to its 'subject_label' column. All subjects must
+        have confounds specified. There should be only one row per subject.
 
     Returns
     -------
     design_matrix: pandas DataFrame
         The second level design matrix
     """
-    maps_name = maps_table['map_name'].tolist()
-    subjects_id = maps_table['subject_label'].tolist()
     confounds_name = []
     if confounds is not None:
         confounds_name = confounds.columns.tolist()
         confounds_name.remove('subject_label')
-    design_columns = (np.unique(maps_name).tolist() +
-                      np.unique(subjects_id).tolist() +
-                      confounds_name)
-    design_matrix = pd.DataFrame(columns=design_columns)
-    for ridx, row in maps_table.iterrows():
-        design_matrix.loc[ridx] = [0] * len(design_columns)
-        design_matrix.loc[ridx, row['map_name']] = 1
-        design_matrix.loc[ridx, row['subject_label']] = 1
-        if confounds is not None:
-            conrow = confounds['subject_label'] == row['subject_label']
-            for conf_name in confounds_name:
-                design_matrix.loc[ridx, conf_name] = confounds[conrow][conf_name].values
 
+    design_columns = (confounds_name + ['intercept'])
     # check column names are unique
     if len(np.unique(design_columns)) != len(design_columns):
         raise ValueError('Design matrix columns do not have unique names')
 
+    design_matrix = pd.DataFrame(columns=design_columns)
+    for ridx, subject_label in enumerate(subjects_label):
+        design_matrix.loc[ridx] = [0] * len(design_columns)
+        design_matrix.loc[ridx, 'intercept'] = 1
+        if confounds is not None:
+            conrow = confounds['subject_label'] == subject_label
+            if np.sum(conrow) > 1:
+                raise ValueError('confounds contain more than one row for '
+                                 'subject %s' % subject_label)
+            elif np.sum(conrow) == 0:
+                raise ValueError('confounds not specified for subject %s' %
+                                 subject_label)
+            for conf_name in confounds_name:
+                confounds_value = confounds[conrow][conf_name].values
+                design_matrix.loc[ridx, conf_name] = confounds_value
+
     # check design matrix is not singular
-    if np.linalg.cond(design_matrix.as_matrix()) < (1. / sys.float_info.epsilon):
+    epsilon = sys.float_info.epsilon
+    if np.linalg.cond(design_matrix.as_matrix()) < (1. / epsilon):
         warn('Attention: Design matrix is singular. Aberrant estimates '
              'are expected.')
 

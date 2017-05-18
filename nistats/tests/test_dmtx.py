@@ -202,7 +202,7 @@ def test_design_matrix3():
     paradigm = basic_paradigm()
     hrf_model = 'glover'
     X, names = design_matrix_light(frame_times, paradigm, hrf_model=hrf_model,
-                        drift_model='blank')
+                        drift_model=None)
     assert_equal(len(names), 4)
 
 
@@ -434,7 +434,7 @@ def test_fir_block():
     tr = 1.0
     frame_times = np.linspace(0, 127 * tr, 128)
     X, names = design_matrix_light(
-        frame_times, bp, hrf_model='fir', drift_model='blank',
+        frame_times, bp, hrf_model='fir', drift_model=None,
         fir_delays=range(0, 4))
     idx = bp['onset'][bp['trial_type'] == 1].astype(np.int)
     assert_equal(X.shape, (128, 13))
@@ -470,7 +470,7 @@ def test_spm_1():
     onsets = [30, 50, 70, 10, 30, 80, 30, 40, 60]
     paradigm = pd.DataFrame({'trial_type': conditions,
                              'onset': onsets})
-    X1 = make_design_matrix(frame_times, paradigm, drift_model='blank')
+    X1 = make_design_matrix(frame_times, paradigm, drift_model=None)
     _, matrix, _ = check_design_matrix(X1)
     spm_design_matrix = DESIGN_MATRIX['arr_0']
     assert_true(((spm_design_matrix - matrix) ** 2).sum() /
@@ -487,7 +487,7 @@ def test_spm_2():
     paradigm = pd.DataFrame({'trial_type': conditions,
                              'onset': onsets,
                              'duration': duration})
-    X1 = make_design_matrix(frame_times, paradigm, drift_model='blank')
+    X1 = make_design_matrix(frame_times, paradigm, drift_model=None)
     spm_design_matrix = DESIGN_MATRIX['arr_1']
     _, matrix, _ = check_design_matrix(X1)
     assert_true(((spm_design_matrix - matrix) ** 2).sum() /
@@ -506,12 +506,11 @@ def _first_level_dataframe():
 
 
 def test_create_second_level_design():
-    first_level_input = _first_level_dataframe()
+    subjects_label = ['02', '01']  # change order to test right output order
     regressors = [['01', 0.1], ['02', 0.75]]
     regressors = pd.DataFrame(regressors, columns=['subject_label', 'f1'])
-    design = create_second_level_design(first_level_input, regressors)
-    expected_design = np.array([[1, 0, 1, 0, 0.1], [0, 1, 1, 0, 0.1],
-                                [1, 0, 0, 1, 0.75], [0, 1, 0, 1, 0.75]])
+    design = create_second_level_design(subjects_label, regressors)
+    expected_design = np.array([[0.75, 1], [0.1, 1]])
     assert_array_equal(design, expected_design)
-    assert_true(len(design.columns) == 2 + 2 + 1)
-    assert_true(len(design) == 2 + 2)
+    assert_true(len(design.columns) == 2)
+    assert_true(len(design) == 2)
