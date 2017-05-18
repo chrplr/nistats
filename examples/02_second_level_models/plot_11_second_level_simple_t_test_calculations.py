@@ -1,6 +1,6 @@
 """
-Example of simple second level analysis
-=======================================
+Second level analysis: one sample t-test
+========================================
 
 Perform a one-sample t-test on a bunch of images 
 (a.k.a. second-level analyis in fMRI) and threshold a statistical image.
@@ -11,18 +11,19 @@ as opposed to narrative sentence reading/listening.
 Author: Bertrand.thirion, Virgile Fritsch, 2014--2015
 
 """
-from nilearn import datasets
-from nilearn.input_data import NiftiMasker
 
 #########################################################################
 # Prepare some images for a simple t test
 # ----------------------------------------
 # This is a simple manually performed second level analysis
-n_samples = 20
+n_subjects = 20
+
+from nilearn import datasets
 localizer_dataset = datasets.fetch_localizer_calculation_task(
-    n_subjects=n_samples)
+    n_subjects=n_subjects)
 
 # mask data
+from nilearn.input_data import NiftiMasker
 nifti_masker = NiftiMasker(
     smoothing_fwhm=5,
     memory='nilearn_cache', memory_level=1)  # cache options

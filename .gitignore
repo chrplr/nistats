@@ -16,6 +16,14 @@ doc/auto_examples/
 doc/modules/generated/
 doc/datasets/generated/
 doc/generated/
+
+examples/*/nilearn_cache
+examples/*/nistats_cache
+examples/nilearn_cache
+examples/nistats_cache
+examples/*/results
+examples/results
+
 pip-log.txt
 .coverage
 coverage
@@ -27,3 +35,5 @@ tags
 *.nt.bz2
 *.tar.gz
 *.tgz
+
+

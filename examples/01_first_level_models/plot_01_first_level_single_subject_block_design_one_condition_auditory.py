@@ -1,15 +1,16 @@
 """
-Univariate analysis of block design, one condition versus rest, single subject
-==============================================================================
+
+First-level analysis of a single subject, block design, one condition (auditory stimulation) 
+===========================================================================================
 
 Authors: Bertrand Thirion, dohmatob elvis dopgima, Christophe Pallier, 2015--2017
 
 
 
-In this tutorial, we compare the fMRI signal during periods of auditory stimulation
-versus periods of rest, using a General Linear Model (GLM). We will
-use a univariate approach in which independent tests are performed at
-each single-voxel.
+In this tutorial, we compare the fMRI signal during periods of
+auditory stimulation versus periods of rest, using a General Linear
+Model (GLM). We will use a univariate approach in which independent
+tests are performed at each single-voxel.
 
 The dataset comes from experiment conducted at the FIL by Geriant Rees
 under the direction of Karl Friston. It is provided by FIL methods
@@ -43,7 +44,6 @@ To run this example, you must launch IPython via ``ipython
     :local:
     :depth: 1
 
-
 """
 
 
@@ -67,9 +67,12 @@ subject_data = fetch_spm_auditory()
 subject_data.func
 from nilearn.plotting import plot_stat_map, plot_anat, plot_img, show
 
-plot_img(subject_data.func[0])
 plot_anat(subject_data.anat)
 show()
+
+plot_img(subject_data.func[0])
+show()
+
 
 ################################################################################
 # .. figure:: ../_images/sphx_glr_plot_spm_auditory_001.png
@@ -126,7 +129,7 @@ events = pd.DataFrame({'onset': onset, 'duration': duration, 'trial_type': condi
 ################################################################################
 # You can inspect the ``events`` object:
    
-events
+print(events)
 
 """
 ::

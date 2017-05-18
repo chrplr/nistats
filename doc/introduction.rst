@@ -10,9 +10,13 @@ Introduction: nistats in a nutshell
 What is nistats: Bold-fMRI analysis
 ===========================================================================
 
-.. topic:: **Why use nistats?**
+nistats is a Python module to perform voxel-wise univariate analyses of functional magnetic resonance images (fMRI), using a general linear model.
 
-    Because it is awesome.
+It provides functions to create design matrices, at the subject or at the group level, to estimate them from images series, and to compute statistical maps (contrasts).
+
+For tutorials, we recommend to read the examples:
+
+   auto_examples/index.rst
 
 .. _installation:
 
